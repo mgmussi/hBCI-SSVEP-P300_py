@@ -1,0 +1,11 @@
+# Ignore all text files
+*.txt
+*.pyc
+# Ignore files related to API keys
+.env
+
+#Ignore 
+**/__pycache__
+*.pyc
+Participants/
+Dev_participants/
