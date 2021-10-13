@@ -669,7 +669,7 @@ def init_dialog():
 	_currDir = os.path.dirname(os.path.abspath(__file__))
 
 	#Dialog 1
-	session_info = {'ParticipantID':'00', 'SessionNumber':'01', 'Version': 8.4, 'Mode': ['Training', 'Practice', 'Live'], 'Paradigm':['P300','SSVEP','Hybrid']}
+	session_info = {'ParticipantID':'00', 'SessionNumber':'01', 'Version': 8.5, 'Mode': ['Training', 'Practice', 'Live'], 'Paradigm':['P300','SSVEP','Hybrid']}
 	infoDlg1 = gui.DlgFromDict(dictionary=session_info,
 								title='Hybrid BCI system',
 								fixed=['Version'],

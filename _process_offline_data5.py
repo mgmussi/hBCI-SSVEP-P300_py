@@ -137,7 +137,7 @@ def get_data_files():
 	curr_id = 0
 
 	#2
-	filename = filedialog.askopenfilenames(initialdir = "C:/Users/atech/Documents/GitHub/SSVEP_EyeGaze-py/Participants",
+	filename = filedialog.askopenfilenames(initialdir = "C:/Users/atech/Documents/GitHub/SSVEP_P300-py/Participants",
 		title = "Select Trial", filetypes = (("Comma Separated Values", "*.csv*"), ("all files","*.*")))
 	if len(filename) > 1:
 		ini_str = filename[0].rindex('/') + 1
