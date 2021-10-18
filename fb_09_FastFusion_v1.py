@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Updates from v5:
-- Saving individual data snippets to file
+Updates from v8.6:
+- New fusion features
+- New selector features
+- Using channels Pz (and T1 and T2) for SSVEP
 
 Used to create flashing boxes for the SSVEP paradigm
 For 60Hz monitor:
@@ -16,6 +18,7 @@ MonFr/ DesFr = NumFr (NumFr/2 >> ON, NumFr/2 >> OFF)
 
 To control frames, use if(NFrame % NumFr >= NumFr/2) which will make cycle 50-50% ON-OFF
 """
+VERSION = 9.1
 import os
 import sys
 import pickle
@@ -668,7 +671,7 @@ def init_dialog():
 	_currDir = os.path.dirname(os.path.abspath(__file__))
 
 	#Dialog 1
-	session_info = {'ParticipantID':'00', 'SessionNumber':'01', 'Version': 8.6, 'Mode': ['Training', 'Practice', 'Live'], 'Paradigm':['P300','SSVEP','Hybrid']}
+	session_info = {'ParticipantID':'00', 'SessionNumber':'01', 'Version': VERSION, 'Mode': ['Training', 'Practice', 'Live'], 'Paradigm':['P300','SSVEP','Hybrid']}
 	infoDlg1 = gui.DlgFromDict(dictionary=session_info,
 								title='Hybrid BCI system',
 								fixed=['Version'],
@@ -753,22 +756,23 @@ def normalization(matrix, x_max = 1, x_min = -1):
 # @profile
 def Acquisition(dataOutQ1, dataOutQ2, saveQ):
 	'''
-	#PARADIGM		#IDEAL CH 				#CYTON 				#GTEC
-	#P300 		 	#PO8, PO7, POz, CPz		#P3, Pz, P4, Cz		#C3, Cz, C4, Pz
-	#SSVEP 			#O1, Oz, O2 			#O1, O2 			#O1, O2, Oz
+	Paradigm		IDEAL CHs 				CYTON 					GTEC
+	[P300] 		 	[PO8, PO7, POz, CPz]	[P3, Pz, P4, Cz]		[C3, Cz, C4, Pz]
+	[SSVEP] 		[O1, Oz, O2]			[T1, Pz, T2,  O1, O2] 	[O1, O2, Oz]
 	'''
 	if headset == 'cyton':
 		chs_p300 = [2,3,4,5]
-		chs_ssvep = [6,7]
+		chs_ssvep = [1,3,8,6,7] #new channels
 		ts_idx = 22
 	elif headset == 'gtec':
 		chs_p300 = [2,3,4,5]
 		chs_ssvep = [6,7,8]
 		ts_idx = 17
 
-	chs_all = list(set(chs_p300 + chs_ssvep)) #doesn't need to start at 0, since column 0 is samples
-	_chs_p300 = list(range(len(chs_p300)))
-	_chs_ssvep = list(range(_chs_p300[-1]+1, _chs_p300[-1]+1+len(chs_ssvep)))
+	chs_all = list(set(chs_p300 + chs_ssvep))
+	_chs_all = [x - 1 for x in chs_all]
+	_chs_p300 = [x-min(chs_all) for x in chs_p300]
+	_chs_ssvep = [x-min(chs_all) for x in chs_ssvep]
 
 	fs = SPS	#Hz
 	low = 5 / NYQ
@@ -850,12 +854,10 @@ def Acquisition(dataOutQ1, dataOutQ2, saveQ):
 			end_stim_ts = data[ts_idx,-1]
 
 			##::Save data from chosen electrodes
-			#new - turn ss into array
 			ss = np.array([data_ls[i][-NYQ:] for i in chs_all])
 			tt = data_ls[ts_idx][-NYQ:]
 			
 			##::Filtering and normalizing samples
-			#new - indexation for array
 			pf = np.hstack(( np.flip(ss[:, 0:win], axis = 1), ss[:, :], np.flip(ss[:, -win:], axis = 1) )) #DIFFERENT LINE (using list)	#create padding  #user np.pad 'reflect' instead?
 			notch = lfilter(b1, a1, pf, axis = 1)	#apply notch
 			s_notch = notch[:,win:-win]	#crop padding
@@ -1251,10 +1253,12 @@ def fusion(Data_LDA_P300Q, Data_LDA_SSVEPQ, acc_LDA_P300, acc_LDA_SSVEP, filenam
 	correct = 0
 	pred_counter = 0
 	una_pred = np.zeros((3,1), dtype = 'f')
-	lda_pred = np.zeros((3,1), dtype = 'f')
-	cca_pred = np.zeros((3,1), dtype = 'f')
+	p300_lda_pred = np.zeros((3,1), dtype = 'f')
+	ssvep_lda_pred = np.zeros((3,1), dtype = 'f')
 	tot_pred = np.zeros((3,1), dtype = 'f')
 	trials_count = 0
+	cumul_clas = 1 #new
+	prev_clas = -1 #new
 
 	while not E.is_set():
 		ELDAFUS.wait(timeout = 13)
@@ -1272,24 +1276,31 @@ def fusion(Data_LDA_P300Q, Data_LDA_SSVEPQ, acc_LDA_P300, acc_LDA_SSVEP, filenam
 					except Empty:
 						return
 
-			yy_CCA = int(y_CCA) #transform SSVEP label to int
+			y_SSVEP = int(y_CCA) #transform SSVEP label to int
+			if prev_clas == y_SSVEP:			#new
+				cumul_clas = cumul_clas*1.1 #new
+			else:							#new
+				prev_clas = y_SSVEP			#new
+				cumul_clas = 1 				#new
 
 			##Fusion
 			if paradigmSSVEP and paradigmP300:
 				if y_LDA == 1:
-					if pl_LDA == yy_CCA: #if position and CCA selection are the same
-						una_pred[yy_CCA] += 2
+					if pl_LDA == y_SSVEP: #if position and CCA selection are the same
+						una_pred[y_SSVEP] += 2
 					else:
-						lda_pred[yy_CCA] += 1*acc_LDA_P300
-						cca_pred[yy_CCA] += 1*acc_LDA_SSVEP
+						p300_lda_pred[y_SSVEP] += acc_LDA_P300
+						ssvep_lda_pred[y_SSVEP] += acc_LDA_SSVEP*cumul_clas #new
+						ssvep_lda_pred[~(np.arange(len(ssvep_lda_pred)) == y_SSVEP)] -= 0.5*acc_LDA_SSVEP #new
 				elif y_LDA == 0:
-					lda_pred[pl_LDA] -= 0.5*acc_LDA_P300
-					cca_pred[yy_CCA] += 1*acc_LDA_SSVEP
+					p300_lda_pred[pl_LDA] -= 0.5*acc_LDA_P300
+					p300_lda_pred[~(np.arange(len(p300_lda_pred)) == pl_LDA)] += 0.25*acc_LDA_P300 #new
+					ssvep_lda_pred[y_SSVEP] += acc_LDA_SSVEP*cumul_clas #new
 				pred_counter += 1
-				tot_pred = np.sum([una_pred, lda_pred, cca_pred], 0)
+				tot_pred = np.sum([una_pred, p300_lda_pred, ssvep_lda_pred], 0)
 
 				# ##::Print prediction arrays
-				print(np.array([una_pred, lda_pred, cca_pred, tot_pred]).reshape(4,3, order = 'F').T)
+				print(np.array([una_pred, p300_lda_pred, ssvep_lda_pred, tot_pred]).reshape(4,3, order = 'F').T)
 				print("\n\n")
 			
 			##P300
@@ -1298,6 +1309,7 @@ def fusion(Data_LDA_P300Q, Data_LDA_SSVEPQ, acc_LDA_P300, acc_LDA_SSVEP, filenam
 					tot_pred[pl_LDA] += 2*acc_LDA_P300
 				else:
 					tot_pred[pl_LDA] -= 0.5*acc_LDA_P300
+					tot_pred[~(np.arange(len(tot_pred)) == pl_LDA)] += 0.25*acc_LDA_P300 #news
 				pred_counter += 1
 
 				# ##::Print prediction arrays
@@ -1306,8 +1318,8 @@ def fusion(Data_LDA_P300Q, Data_LDA_SSVEPQ, acc_LDA_P300, acc_LDA_SSVEP, filenam
 			
 			##SSVEP
 			elif paradigmSSVEP and not paradigmP300:
-				tot_pred[yy_CCA] += 2*acc_LDA_SSVEP
-				tot_pred[~(np.arange(len(tot_pred)) == yy_CCA)] -= 0.5*acc_LDA_SSVEP
+				tot_pred[y_SSVEP] += 2*acc_LDA_SSVEP*cumul_clas #new
+				tot_pred[~(np.arange(len(tot_pred)) == y_SSVEP)] -= 0.5*acc_LDA_SSVEP
 				pred_counter += 1
 
 				# ##::Print prediction arrays
@@ -1339,8 +1351,8 @@ def fusion(Data_LDA_P300Q, Data_LDA_SSVEPQ, acc_LDA_P300, acc_LDA_SSVEP, filenam
 
 				#Reset counters
 				una_pred = np.zeros((3,1))
-				lda_pred = np.zeros((3,1))
-				cca_pred = np.zeros((3,1))
+				p300_lda_pred = np.zeros((3,1))
+				ssvep_lda_pred = np.zeros((3,1))
 				tot_pred = np.zeros((3,1))
 				pred_counter = 0
 				trials_count += 1

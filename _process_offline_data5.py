@@ -99,13 +99,13 @@ def filtering(samples):
 	notch = lfilter(b1, a1, pf, axis = 1)
 	s_notch = notch[:,win:-win]
 	pf2 = np.hstack(( np.flip(s_notch[:, 0:win], axis = 1), s_notch[:, :], np.flip(s_notch[:, -win:], axis = 1) ))
-	#BUTTERWORTH
-	# posfilt = lfilter(b, a, pf2, axis = 1)
-	#FIR
 	posfilt = lfilter(b, [1.0], pf2, axis = 1)
 	filtsamples = posfilt[:, win+delay:-win]
 	return filtsamples
-
+	
+	#BUTTERWORTH
+	# posfilt = lfilter(b, a, pf2, axis = 1)
+	#FIR
 def average_across_trials(data):
 	count_ch = 0
 	count_seg = 0
@@ -262,7 +262,7 @@ def SSVEPfun(data):
 		xfft = fftfreq(SPS*2, 1/SPS) #precision of 0.5Hz
 		for s_ch in datum:
 			# print(s_ch.shape)
-			s_ch_pad = np.pad(s_ch, (0, SPS*2-len(s_ch) ), 'constant')
+			s_ch_pad = np.pad(s_ch, (0, SPS*2-len(s_ch) ), 'constant') #adding zero padding to the edges
 			yfft = np.abs(fft(s_ch_pad))**2 #PSD
 			for frq in [15, 30, 10, 20, 6, 12]: #for each frq and its double frq +-0.5Hz
 				idx = [i for i in range(len(xfft)) if xfft[i] >= (frq-0.5) and xfft[i] <= (frq+0.5)]
@@ -575,6 +575,9 @@ if __name__ == '__main__':
 	# for S_lbl_all in SSVEP_lbls_all:
 	# 	cca_lbls_all.append(d2b(S_lbl_all))
 	cca_lbls_all = np.array(SSVEP_lbls_all)
+
+	print("##THIS>", avg_data.shape)
+	print("##THIS>", _chs_p300)
 
 	## Processing for P300
 	feat_set_P300 = P300fun(avg_data[:, _chs_p300, :], timestamps)
