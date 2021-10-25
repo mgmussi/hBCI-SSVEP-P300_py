@@ -431,16 +431,16 @@ def fusion(acc_LDA_P300, acc_LDA_SSVEP, PL_LDA, Y_SSVEP, Y_P300, True_lbls, file
 			tru_lbl_d = int(True_lbls[j])
 			y_SSVEP = int(Y_SSVEP[j])
 
-			if paradigmP300 and paradigmSSVEP:
-				if prev_clas == y_SSVEP:		#new
-					cumul_clas = cumul_clas*1.1 #new
-				else:							#new
-					prev_clas = y_SSVEP			#new
-					cumul_clas = 1 				#new
+			if prev_clas == y_SSVEP:	#new
+				cumul_clas = cumul_clas*1.1 #new
+			else:						#new
+				prev_clas = y_SSVEP		#new
+				cumul_clas = 1 			#new
 
+			if paradigmP300 and paradigmSSVEP:
 				if Y_P300[j] == 1:
 					if pl_LDA == y_SSVEP: #if position and CCA selection are the same
-						una_pred[y_SSVEP] += 2
+						una_pred[y_SSVEP] += 1*acc_LDA_P300 + 1*acc_LDA_SSVEP #new
 					else:
 						p300_lda_pred[y_SSVEP] += 1*acc_LDA_P300
 						ssvep_lda_pred[y_SSVEP] += 1*acc_LDA_SSVEP*cumul_clas #new
@@ -471,11 +471,6 @@ def fusion(acc_LDA_P300, acc_LDA_SSVEP, PL_LDA, Y_SSVEP, Y_P300, True_lbls, file
 			
 			##SSVEP
 			elif paradigmSSVEP and not paradigmP300:
-				if prev_clas == y_SSVEP:	#new
-					cumul_clas = cumul_clas*1.1 #new
-				else:						#new
-					prev_clas = y_SSVEP		#new
-					cumul_clas = 1 			#new
 				tot_pred[y_SSVEP] += 2*acc_LDA_SSVEP*cumul_clas #new
 				tot_pred[~(np.arange(len(tot_pred)) == y_SSVEP)] -= 0.5*acc_LDA_SSVEP
 				pred_counter += 1
@@ -572,6 +567,7 @@ if __name__ == '__main__':
 
 	## Receives validation data
 	valid_eeg, valid_tmst, valid_P300_lbls, valid_P300_pos, valid_SSVEP_lbls = get_data_files(valid_file)
+
 
 	'''------------------
 	REMINDER

@@ -758,7 +758,7 @@ def Acquisition(dataOutQ1, dataOutQ2, saveQ):
 	'''
 	Paradigm		IDEAL CHs 				CYTON 					GTEC
 	[P300] 		 	[PO8, PO7, POz, CPz]	[P3, Pz, P4, Cz]		[C3, Cz, C4, Pz]
-	[SSVEP] 		[O1, Oz, O2]			[T1, Pz, T2,  O1, O2] 	[O1, O2, Oz]
+	[SSVEP] 		[O1, Oz, O2]			[T5, Pz, T6,  O1, O2] 	[O1, O2, Oz]
 	'''
 	if headset == 'cyton':
 		chs_p300 = [2,3,4,5]
@@ -1287,15 +1287,16 @@ def fusion(Data_LDA_P300Q, Data_LDA_SSVEPQ, acc_LDA_P300, acc_LDA_SSVEP, filenam
 			if paradigmSSVEP and paradigmP300:
 				if y_LDA == 1:
 					if pl_LDA == y_SSVEP: #if position and CCA selection are the same
-						una_pred[y_SSVEP] += 2
+						una_pred[y_SSVEP] += 1*acc_LDA_P300 + 1*acc_LDA_SSVEP #new half value ea.
 					else:
 						p300_lda_pred[y_SSVEP] += acc_LDA_P300
 						ssvep_lda_pred[y_SSVEP] += acc_LDA_SSVEP*cumul_clas #new
-						ssvep_lda_pred[~(np.arange(len(ssvep_lda_pred)) == y_SSVEP)] -= 0.5*acc_LDA_SSVEP #new
+						ssvep_lda_pred[~(np.arange(len(ssvep_lda_pred)) == y_SSVEP)] -= 0.25*acc_LDA_SSVEP #new half value ea.
 				elif y_LDA == 0:
-					p300_lda_pred[pl_LDA] -= 0.5*acc_LDA_P300
-					p300_lda_pred[~(np.arange(len(p300_lda_pred)) == pl_LDA)] += 0.25*acc_LDA_P300 #new
+					p300_lda_pred[pl_LDA] -= 0.25*acc_LDA_P300 #new half value ea.
+					p300_lda_pred[~(np.arange(len(p300_lda_pred)) == pl_LDA)] += 0.125*acc_LDA_P300 #new half value ea.
 					ssvep_lda_pred[y_SSVEP] += acc_LDA_SSVEP*cumul_clas #new
+					ssvep_lda_pred[~(np.arange(len(ssvep_lda_pred)) == y_SSVEP)] -= 0.25*acc_LDA_SSVEP #new half value ea.
 				pred_counter += 1
 				tot_pred = np.sum([una_pred, p300_lda_pred, ssvep_lda_pred], 0)
 
@@ -1598,7 +1599,7 @@ if __name__ == '__main__':
 			df['P300_labels'] = -1
 			df['P300_position'] = -1
 			df['SSVEP_labels'] = -1
-			x = 0
+			k = 0
 			#Find columns with timestamps
 			for cl in df['Timestamps']:
 				#tss => [ini_stim_ts, end_stim_ts, ll, int_TL, pl]
@@ -1614,9 +1615,9 @@ if __name__ == '__main__':
 						df.loc[df['Timestamps'] == cl, 'P300_ts'] = 2
 
 				#progress bar
-				msg = "[Progress |" + '\u2588' * math.floor( ((x/df['Timestamps'].size*100) % 100)/2 ) + '\u2591' * math.ceil(50-( ((x/df['Timestamps'].size*100) % 100)/2 )) + '] [Elem ' + str(x) + ' ~ '+'{:.2f}%'.format(x/df['Timestamps'].size*100) + ']'
+				msg = "[Progress |" + '\u2588' * math.floor( ((k/df['Timestamps'].size*100) % 100)/2 ) + '\u2591' * math.ceil(50-( ((k/df['Timestamps'].size*100) % 100)/2 )) + '] [Elem ' + str(k) + ' ~ '+'{:.2f}%'.format(k/df['Timestamps'].size*100) + ']'
 				print(msg, end="\r")
-				x += 1
+				k += 1
 			print('')
 
 			# #To save it back to csv
@@ -1697,16 +1698,6 @@ if __name__ == '__main__':
 				# 	writer = csv.writer(classioutCCA_path__)
 				# 	writer.writerows([label_set, y_set, feature_set])
 
-
-		##Plotting the normalized and filtered data
-		x = np.array(x).reshape(-1)
-		xf = np.array(xf).reshape(-1)
-		# [initially: 36x6x125]
-		y = np.array(y)
-		y = np.swapaxes(y,0,1).reshape(6,-1)
-
-		yf = np.array(yf)
-		yf = np.swapaxes(yf,0,1).reshape(6,-1)
 
 		print("TIMESTAMPS  : ", x.shape)
 		print("TIMESTAMPS F: ", xf.shape)
