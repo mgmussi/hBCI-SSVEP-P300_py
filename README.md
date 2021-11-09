@@ -1,7 +1,12 @@
 # SSVEP P300 -py
-Hybrid Brain-Computer Interface using synchronous SSVEP and P300 for Python. On a display, there will be three squares which will have white centre areas that flash at different frequencies for the SSVEP component, and an outline edge that will appear around the squares one at a time in a pseudo-random order for the P300 component. For the SSVEP, squares will create the flashing effect by interpolating between black and white for maximum contrast. Because of the limited frames per second provided by the monitors available for this experiment (60 frames per second), and to avoid seizure-inducing ranges (12-25 Hz ([Fisher et al., 2005](https://onlinelibrary-wiley-com.login.ezproxy.library.ualberta.ca/doi/full/10.1111/j.1528-1167.2005.31405.x); [Okudan & Özkara, 2018](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5779309/))), the chosen frequencies were be 10, 6 and 4 Hz (_but they can be changed using different frame ratios_). These frequencies can be easily attained on the display because they are multiples of the monitor’s frames per second. When the classification is concluded, the selected square’s centre area will briefly turn green in colour to indicate the classifier chose that square as selected.
+Hybrid Brain-Computer Interface using synchronous SSVEP and P300 for Python. On a display, there will be three squares which will have white centre areas that flash at different frequencies for the SSVEP component, and an outline edge that will appear around the squares one at a time in a pseudo-random order for the P300 component. For the SSVEP, squares will create the flashing effect by interpolating between black and white for maximum contrast. Because of the limited frames per second provided by the monitors available for this experiment (60 frames per second), and to avoid seizure-inducing ranges (12-25 Hz ([Fisher et al., 2005](https://onlinelibrary-wiley-com.login.ezproxy.library.ualberta.ca/doi/full/10.1111/j.1528-1167.2005.31405.x); [Okudan & Özkara, 2018](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5779309/))), the chosen frequencies were be 15, 10 and 6 Hz (_but they can be changed using different frame ratios_). These frequencies can be easily attained on the display because they are multiples of the monitor’s frames per second. When the classification is concluded, the selected square’s centre area will briefly turn green in colour to indicate the classifier chose that square as selected.
 
-::The system is compatible with the OpenBCI and the g.tec Unicorn::
+(The system is compatible with the _Cyton OpenBCI_ and the _g.tec Unicorn_)
+
+## Imediate variables to change
+- The `screenRefreshRate` needs to be changed to the appropriate screen refresh rate
+- The `params.serial_port` needs to be changed to the appropriate COM port, when using _Cython_
+- The `params.serial_number` needs to be changed to the appropriate serial number, when using _Unicorn_
 
 ## Setting up experiment on a new computer (Windows):
 ### Preparation, download:
@@ -94,10 +99,6 @@ Some of the implementations came from ideas that people gave as I tried to solve
 2) Some ideas for profiling and making the plotting faster. I got the  set_data  idea from here: https://stackoverflow.com/questions/63529920/plotting-higher-frequency-data-using-threads-in-real-time-without-freezing-tkint
 3) Trying to make set_data work in my case (with no success, unfortunately): https://stackoverflow.com/questions/63637759/why-are-my-plots-not-appearing-with-set-data-using-tkinter
 
-### D. Streaming the LSL (simulation)
-0) In your Anaconda prompt, make sure you activated the created environment
-1) Navigate to the OpenBCI LSL folder
-
 ---
 ### Problems with Mac not recognizing OpenBCI Dongle:
 Sometimes works, sometimes don’t: https://gist.github.com/technobly/97cb576957f0a701580984c6edc0433f
@@ -105,6 +106,8 @@ Sometimes works, sometimes don’t: https://gist.github.com/technobly/97cb576957
 ### Problems With FTDI Buffer FIx on OS X:
 1) Did not solve the problem, but here is the resource: https://docs.openbci.com/docs/10Troubleshooting/FTDI_Fix_Mac
 2) A thread that ended being the resource: https://openbci.com/forum/index.php?p=/discussion/199/latencytimer-inbuffersize-for-os-x-new-info-plist
+
+
 
 
 
