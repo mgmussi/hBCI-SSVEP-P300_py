@@ -212,9 +212,11 @@ def P300fun(data):
 	return feat_set
 
 def SSVEPfun(data):
+	print("\n[FEAT_EXTRACT SSVEP]")
 	feat_set = []
 	for datum in data:
 		feat = []
+		show_feat = []
 		# both_chan = datum.reshape(-1)
 		# feat_set.append(both_chan)
 
@@ -222,18 +224,19 @@ def SSVEPfun(data):
 		Get PSD bins sum for each target frq and its double frq (+-0.5Hz)
 		Total of features: chs*2*frqs = 2*2*3 = 12 features
 		-------------'''
-
-
 		xfft = fftfreq(SPS*2, 1/SPS) #precision of 0.5Hz
 		for s_ch in datum:
 			# print(s_ch.shape)
+			show_feat = []
 			s_ch_pad = np.pad(s_ch, (0, SPS*2-len(s_ch) ), 'constant') #adding zero padding to the edges
 			yfft = np.abs(fft(s_ch_pad))**2 #PSD
-			for frq in [15, 30, 10, 20, 6, 12]: #for each frq and its double frq +-0.5Hz
+			for frq in [7.5, 15, 5, 10, 3, 6]: #[15, 30, 10, 20, 6, 12]: #for each frq and its double frq +-0.5Hz
 				idx = [i for i in range(len(xfft)) if xfft[i] >= (frq-0.5) and xfft[i] <= (frq+0.5)]
 				feat.append(np.sum(yfft[idx]))
 		feat_set.append(feat)
 	feat_set = np.array(feat_set)
+
+
 	return feat_set
 
 def P300_pred(the_model, feat_set, label_set, pl_set, filename):
@@ -449,6 +452,7 @@ def fusion(acc_LDA_P300, acc_LDA_SSVEP, PL_LDA, Y_SSVEP, Y_P300, True_lbls, file
 					p300_lda_pred[pl_LDA] -= 0.5*acc_LDA_P300
 					p300_lda_pred[~(np.arange(len(p300_lda_pred)) == pl_LDA)] += 0.25*acc_LDA_P300 #new
 					ssvep_lda_pred[y_SSVEP] += 1*acc_LDA_SSVEP*cumul_clas #new
+					ssvep_lda_pred[~(np.arange(len(ssvep_lda_pred)) == y_SSVEP)] -= 0.5*acc_LDA_SSVEP #new
 				pred_counter += 1
 				tot_pred = np.sum([una_pred, p300_lda_pred, ssvep_lda_pred], 0)
 
@@ -517,25 +521,8 @@ def fusion(acc_LDA_P300, acc_LDA_SSVEP, PL_LDA, Y_SSVEP, Y_P300, True_lbls, file
 
 
 if __name__ == '__main__':
-	'''
-	Paradigm		IDEAL CHs 				CYTON 				GTEC
-	[P300] 		 	[PO8, PO7, POz, CPz]	[P3, Pz, P4, Cz]	[C3, Cz, C4, Pz]
-	[SSVEP] 		[O1, Oz, O2]			[Pz, O1, O2] 		[O1, O2, Oz]
-	'''
-	#CYTON
-	chs_p300 = [2,3,4,5]
-	chs_ssvep = [3,6,7] #new channel
-
-	#G.TEC
-	# chs_p300 = [2,3,4,5]
-	# chs_ssvep = [6,7,8]
-
-	chs_all = list(set(chs_p300 + chs_ssvep))
-	_chs_all = [x - 1 for x in chs_all]
-	_chs_p300 = [x-min(chs_all) for x in chs_p300]
-	_chs_ssvep = [x-min(chs_all) for x in chs_ssvep]
-
 	## Selecting Files
+	#EX>: C:\Users\atech\Documents\GitHub\SSVEP_P300-py\Participants\P02\SESS01s\P02_01_01_saveddata.csv
 	filename = filedialog.askopenfilenames(initialdir = "C:/Users/atech/Documents/GitHub/SSVEP_P300-py/Participants",
 		title = "Select Trial", filetypes = (("Comma Separated Values", "*.csv*"), ("all files","*.*")))
 	fidx = filename[0].rindex('_', 0, filename[0].rindex('_')) + 1
@@ -560,6 +547,30 @@ if __name__ == '__main__':
 	elif char == 's':
 		paradigmSSVEP = True
 		paradigmP300 = False
+
+	## Checking participant
+	P = filename[0][fidx+2:fidx+4] #from 'P02' takes only '02'
+	P_num = int(P)
+	'''
+	Paradigm		IDEAL CHs 				CYTON 				GTEC
+	[P300] 		 	[PO8, PO7, POz, CPz]	[P3, Pz, P4, Cz]	[C3, Cz, C4, Pz]
+	[SSVEP] 		[O1, Oz, O2]			[Pz, O1, O2] 		[O1, O2, Oz]
+	'''
+	#CYTON
+	chs_p300 = [2,3,4,5]
+	if P_num < 4:
+		chs_ssvep = [3,6,7]
+	elif P_num > 3:
+		chs_ssvep = [1,3,8,6,7]
+
+	#G.TEC
+	# chs_p300 = [2,3,4,5]
+	# chs_ssvep = [6,7,8]
+
+	chs_all = list(set(chs_p300 + chs_ssvep))
+	_chs_all = [x - 1 for x in chs_all]
+	_chs_p300 = [x-min(chs_all) for x in chs_p300]
+	_chs_ssvep = [x-min(chs_all) for x in chs_ssvep]
 
 
 	## Receives training data
@@ -605,8 +616,12 @@ if __name__ == '__main__':
 
 	valid_file_txt = []
 	for file in valid_file:
-		dir__ = file.replace('.csv', '')
-		valid_file_txt.append(dir__+'_offline_processing.txt')
+		
+
+		 = file.replace('.csv', '')
+		valid_file_txt.append(
+
+			+'_offline_processing.txt')
 
 	## TRAINING SET
 	#Feature Extraction
