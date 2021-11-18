@@ -210,6 +210,12 @@ def P300fun(data):
 	return feat_set
 
 def SSVEPfun(data, validation, perf_file):
+	'''------------
+	Testing filter bank with CCA correlation coefficient as features.
+	For more details, refer to the paper:
+	<https://iopscience-iop-org.login.ezproxy.library.ualberta.ca/article/10.1088/1741-2560/12/4/046008>
+	------------'''
+	
 	print("\n[FEAT_EXTRACT SSVEP]")
 	print(data.shape)
 
@@ -350,7 +356,7 @@ def SSVEP_pred(the_model, feat_set, label_set, filename, train_pred_sz_set):
 	rgt = 0
 	for feat in feat_set:
 		# y = the_model.predict(feat.reshape(1,-1))
-		
+
 		pred_set.append(y)
 
 	int_pred = [int(x) for x in pred_set]
